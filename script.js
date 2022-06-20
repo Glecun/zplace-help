@@ -13,12 +13,14 @@
 
 const OVERLAY_URL = 'https://s8.gifyu.com/images/overlay1206B.png';
 const NOTIFICATION_SOUND = new Audio('https://minuskube.fr/zplace_ready.mp3');
+const NOTIFICATION_REMINDER_IN_MINUTES = 2;
 const DEFAULT_CONFIGURATION = {
     showOverlay: true,
-    notificationSound: true
+    audioEnabled: true
 };
 
 const configuration = DEFAULT_CONFIGURATION
+let intervalId;
 
 function main() {
     setKeyBindings(configuration);
@@ -30,14 +32,17 @@ function setKeyBindings(configuration) {
     document.addEventListener('keypress', function (event) {
         if (event.code === 'KeyH') {
             configuration.showOverlay = !configuration.showOverlay
+            loadOverlay()
         } else if (event.code === 'KeyJ') {
-            configuration.notificationSound = !configuration.notificationSound
-            console.log('notification sound : ' + configuration.notificationSound);
+            configuration.audioEnabled = !configuration.audioEnabled
+            console.log('audio enabled : ' + configuration.audioEnabled);
         }
     });
 }
 
 function loadOverlay() {
+    if (!configuration.showOverlay){ return }
+
     let canvas = document.getElementsByTagName('canvas')[0];
     const parentDiv = canvas.parentElement;
 
@@ -49,13 +54,27 @@ function loadOverlay() {
 
     parentDiv.appendChild(image);
 }
+
 async function onDocumentChanged(mutations, _) {
     for (const mutation of mutations) {
-        if (configuration.notificationSound && mutation.target.textContent === ' Colorier en ' && mutation.oldValue != null) {
+        await manageNotificationSound(mutation);
+    }
+    upsertSquareColorPreview();
+}
+
+async function manageNotificationSound(mutation) {
+    if (!configuration.audioEnabled || mutation.target.textContent !== ' Colorier en ' || mutation.oldValue === null) {
+        return
+    }
+
+    await NOTIFICATION_SOUND.play();
+
+    clearInterval(intervalId)
+    intervalId = setInterval(async () => {
+        if (configuration.audioEnabled) {
             await NOTIFICATION_SOUND.play();
         }
-        upsertSquareColorPreview();
-    }
+    }, NOTIFICATION_REMINDER_IN_MINUTES * 60 * 1000);
 }
 
 function upsertSquareColorPreview() {
