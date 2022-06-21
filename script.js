@@ -71,7 +71,8 @@ async function manageNotificationSound(mutation) {
 
     clearInterval(intervalId)
     intervalId = setInterval(async () => {
-        if (configuration.audioEnabled) {
+        const isButtonActivated = document.querySelector('.validateBtn.primary') !== undefined;
+        if (configuration.audioEnabled && isButtonActivated) {
             await NOTIFICATION_SOUND.play();
         }
     }, NOTIFICATION_REMINDER_IN_MINUTES * 60 * 1000);
